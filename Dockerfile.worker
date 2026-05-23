@@ -1,0 +1,42 @@
+# Dockerfile.worker
+# Celery inference worker — shares the same base stage as Dockerfile.api
+# so GHA layer cache is reused between the two builds.
+
+# ── Stage 1: system deps + Python packages ────────────────────────────────────
+FROM python:3.11-slim AS base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Separate requirements file for the worker — no fastapi/uvicorn bloat.
+COPY requirements/base.txt   requirements/base.txt
+COPY requirements/worker.txt requirements/worker.txt
+RUN pip install --no-cache-dir -r requirements/worker.txt
+
+# ── Stage 2: application code ─────────────────────────────────────────────────
+FROM base AS app
+
+COPY api/     ./api/
+COPY model/   ./model/
+COPY data/    ./data/
+COPY workers/ ./workers/
+
+RUN mkdir -p checkpoints reports/xai monitoring/logs
+
+RUN adduser --disabled-password --gecos "" workeruser && \
+    chown -R workeruser:workeruser /app
+USER workeruser
+
+CMD ["celery", "-A", "workers.celery_app", "worker", \
+     "--loglevel=info", \
+     "--concurrency=2", \
+     "--max-tasks-per-child=50"]

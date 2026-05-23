@@ -1,0 +1,154 @@
+version: "3.9"
+
+# ---------------------------------------------------------------------------
+# DeepTrace — Full Stack Docker Compose
+# Services: api, worker, redis, mlflow, prometheus, grafana
+#
+# Usage:
+#   Development:  docker compose up
+#   Production:   docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+# ---------------------------------------------------------------------------
+
+x-common-env: &common-env
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/1
+  MLFLOW_TRACKING_URI: http://mlflow:5000
+  MODEL_URI: checkpoints/calibrated_model.pt
+  MODEL_DEVICE: cpu
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+
+services:
+
+  # ── FastAPI prediction API ────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: deeptrace-api:latest
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *common-env
+      API_KEYS: ${API_KEYS:-dev-key-123,test-key-456}
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173"
+    volumes:
+      - ./checkpoints:/app/checkpoints:ro
+      - ./reports:/app/reports
+      - ./monitoring/logs:/app/monitoring/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        # Uncomment for GPU support:
+        # reservations:
+        #   devices:
+        #     - driver: nvidia
+        #       count: 1
+        #       capabilities: [gpu]
+
+  # ── Celery async worker ───────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: deeptrace-worker:latest
+    environment:
+      <<: *common-env
+    volumes:
+      - ./checkpoints:/app/checkpoints:ro
+      - ./reports:/app/reports
+      - ./monitoring/logs:/app/monitoring/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 4G
+
+  # ── React frontend (served via nginx) ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ── Redis (broker + cache) ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── MLflow experiment tracking ────────────────────────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.9.2
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    restart: unless-stopped
+
+  # ── Prometheus metrics scraping ───────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    restart: unless-stopped
+
+  # ── Grafana dashboards ────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-deeptrace}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  mlflow-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  default:
+    name: deeptrace-network

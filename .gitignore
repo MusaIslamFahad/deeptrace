@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Data (tracked by DVC instead)
+data/raw/
+data/processed/
+data/manifest.csv
+
+# Model checkpoints (tracked by DVC / MLflow)
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Reports and artifacts
+reports/
+mlruns/
+optuna.db
+*.db
+
+# Monitoring logs
+monitoring/logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.env
+
+# Docker
+*.tar
+
+# DVC
+/tmp

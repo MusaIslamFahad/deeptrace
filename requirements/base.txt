@@ -1,0 +1,10 @@
+# requirements/base.txt
+# Shared runtime-only dependencies.
+# NO training, NO dev tooling — those live in training.txt / dev.txt.
+
+numpy==1.26.4
+Pillow==10.3.0
+scikit-learn==1.4.2
+pyyaml==6.0.1
+python-dotenv==1.0.1
+tqdm==4.66.4

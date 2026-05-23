@@ -1,0 +1,54 @@
+stages:
+
+  build_manifest:
+    cmd: python -c "from data.dataset import build_manifest; build_manifest()"
+    deps:
+      - data/raw/
+      - data/dataset.py
+    outs:
+      - data/manifest.csv
+    params:
+      - data.val_ratio
+      - data.test_ratio
+      - data.seed
+
+  train:
+    cmd: python -m model.train --params params.yaml
+    deps:
+      - data/manifest.csv
+      - data/dataset.py
+      - model/architecture.py
+      - model/train.py
+      - model/xai_pipeline.py
+    params:
+      - model
+      - training
+      - data
+    outs:
+      - checkpoints/best_model.pt
+    metrics:
+      - reports/test_results.json:
+          cache: false
+
+  calibrate:
+    cmd: python -c "
+      from model.train import Trainer
+      import yaml
+      config = yaml.safe_load(open('params.yaml'))
+      t = Trainer(config)
+      t.calibrate_model()
+      "
+    deps:
+      - checkpoints/best_model.pt
+      - model/architecture.py
+    outs:
+      - checkpoints/calibrated_model.pt
+
+  drift_report:
+    cmd: python -m monitoring.drift_report
+    deps:
+      - monitoring/drift_report.py
+      - monitoring/logs/
+    outs:
+      - reports/drift/summary.json:
+          cache: false

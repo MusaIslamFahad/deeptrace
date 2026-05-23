@@ -1,0 +1,34 @@
+services:
+
+  # ── FastAPI Prediction API ─────────────────────────────────────────────────
+  - type: web
+    name: deeptrace-api
+    runtime: docker
+    dockerfilePath: Dockerfile.render
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: API_KEYS
+        value: deeptrace-demo-key
+      - key: MODEL_DEVICE
+        value: cpu
+      - key: MODEL_DEMO_MODE
+        value: "true"
+      - key: CORS_ORIGINS
+        value: https://deeptrace.vercel.app,http://localhost:3000
+      - key: REDIS_URL
+        fromService:
+          name: deeptrace-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: deeptrace-redis
+          type: redis
+          property: connectionString
+
+  # ── Redis (free managed instance) ─────────────────────────────────────────
+  - type: redis
+    name: deeptrace-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
