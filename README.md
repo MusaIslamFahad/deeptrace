@@ -2,6 +2,10 @@
   
 # DeepTrace
 
+![DeepTrace Banner](https://raw.githubusercontent.com/MusaIslamFahad/deeptrace/main/assets/banner.png)
+
+DeepTrace goes beyond "AI or real" - it identifies **which AI system generated an image**: Stable Diffusion, Midjourney, DALL·E 3, Flux, or a real photograph. Each prediction returns calibrated probabilities, a Grad-CAM attention map, and an optional natural-language explanation powered by Claude.
+
 <p align="center">
 
 <a href="https://github.com/MusaIslamFahad/deeptrace/actions/workflows/ci.yml">
@@ -15,8 +19,6 @@
 <img src="https://img.shields.io/github/stars/MusaIslamFahad/deeptrace?style=for-the-badge&logo=github&label=GitHub%20Stars&color=0f172a" />
 
 </p>
-
-DeepTrace goes beyond "AI or real" - it identifies **which AI system generated an image**: Stable Diffusion, Midjourney, DALL·E 3, Flux, or a real photograph. Each prediction returns calibrated probabilities, a Grad-CAM attention map, and an optional natural-language explanation powered by Claude.
 
 </div>
 
