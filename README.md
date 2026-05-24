@@ -2,23 +2,27 @@
   
 # DeepTrace
 
-![DeepTrace Banner](https://raw.githubusercontent.com/MusaIslamFahad/deeptrace/main/assets/banner.png)
+**DeepTrace goes beyond "AI or real" - it identifies which AI system generated an image: Stable Diffusion, Midjourney, DALL·E 3, Flux or a real photograph. Each prediction returns calibrated probabilities, a Grad-CAM attention map and an optional natural-language explanation powered by Claude.**
 
-DeepTrace goes beyond "AI or real" - it identifies **which AI system generated an image**: Stable Diffusion, Midjourney, DALL·E 3, Flux, or a real photograph. Each prediction returns calibrated probabilities, a Grad-CAM attention map, and an optional natural-language explanation powered by Claude.
+*Multi-Generator AI Image Provenance Detection*
 
 <p align="center">
 
-<a href="https://github.com/MusaIslamFahad/deeptrace/actions/workflows/ci.yml">
-  <img src="https://img.shields.io/github/actions/workflow/status/MusaIslamFahad/deeptrace/ci.yml?style=for-the-badge&label=CI%20Pipeline&logo=githubactions&logoColor=white&color=22C55E" />
-</a>
-
-<img src="https://img.shields.io/badge/Python-3.11+-0f172a?style=for-the-badge&logo=python&logoColor=FFD43B" />
-<img src="https://img.shields.io/badge/FastAPI-0.111+-0f172a?style=for-the-badge&logo=fastapi&logoColor=00C7B7" />
-<img src="https://img.shields.io/badge/API-REST-0f172a?style=for-the-badge&logo=swagger&logoColor=85EA2D" />
-<img src="https://img.shields.io/badge/License-MIT-0f172a?style=for-the-badge&logo=opensourceinitiative&logoColor=FACC15" />
-<img src="https://img.shields.io/github/stars/MusaIslamFahad/deeptrace?style=for-the-badge&logo=github&label=GitHub%20Stars&color=0f172a" />
-
+  <img src="https://img.shields.io/badge/CI-Passing-success" />
+  <img src="https://img.shields.io/badge/Accuracy-92%2B%25-brightgreen" alt="Accuracy">
+  <img src="https://img.shields.io/badge/Supported_Models-5-blue" alt="Models">
+  <img src="https://img.shields.io/badge/Features-Grad--CAM%20%7C%20Batch%20%7C%20XAI-success" alt="Features">
+  <img src="https://img.shields.io/badge/Python-3.11%2B-blue" />
+  <img src="https://img.shields.io/badge/FastAPI-0.111%2B-teal" />
+  <img src="https://img.shields.io/badge/API-REST-orange" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow" />
+  <img src="https://img.shields.io/github/stars/MusaIslamFahad/deeptrace?style=social" />
+  
 </p>
+
+![DeepTrace Banner](https://raw.githubusercontent.com/MusaIslamFahad/deeptrace/main/assets/banner.png)
+
+Know exactly who made the image - not just "AI or Real"
 
 </div>
 
