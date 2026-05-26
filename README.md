@@ -7,7 +7,6 @@
 *Multi-Generator AI Image Provenance Detection*
 
 <p align="center">
-
   <img src="https://img.shields.io/badge/CI-Passing-success" />
   <img src="https://img.shields.io/badge/Accuracy-92%2B%25-brightgreen" alt="Accuracy">
   <img src="https://img.shields.io/badge/Supported_Models-5-blue" alt="Models">
@@ -17,8 +16,11 @@
   <img src="https://img.shields.io/badge/API-REST-orange" />
   <img src="https://img.shields.io/badge/License-MIT-yellow" />
   <img src="https://img.shields.io/github/stars/MusaIslamFahad/deeptrace?style=social" />
-  
 </p>
+
+### 🌐 [Live Demo](https://deeptrace-image.vercel.app) &nbsp;·&nbsp; 📖 [API Docs](https://deeptrace-api-y39b.onrender.com/docs) &nbsp;·&nbsp; ❤️ [Health Check](https://deeptrace-api-y39b.onrender.com/health)
+
+> **Note:** Live demo runs on Render free tier - first request after inactivity may take ~30s to wake up. Full model training code and real evaluation results are in this repository.
 
 ![DeepTrace Banner](https://raw.githubusercontent.com/MusaIslamFahad/deeptrace/main/assets/banner.png)
 
@@ -28,9 +30,29 @@ Know exactly who made the image - not just "AI or Real"
 
 ---
 
+## Live Deployment
+
+| | URL |
+|---|---|
+| 🌐 React Dashboard | https://deeptrace-image.vercel.app |
+| 📡 REST API | https://deeptrace-api-y39b.onrender.com |
+| 📖 API Docs (Swagger) | https://deeptrace-api-y39b.onrender.com/docs |
+| ❤️ Health Check | https://deeptrace-api-y39b.onrender.com/health |
+
+Try it instantly - no sign-up needed:
+
+```bash
+curl -X POST https://deeptrace-api-y39b.onrender.com/api/v1/predict \
+  -H "X-API-Key: deeptrace-demo-key" \
+  -F "file=@your_image.jpg"
+```
+
+---
+
 ## Table of Contents
 
 - [What it does](#what-it-does)
+- [Live Deployment](#live-deployment)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
@@ -264,17 +286,11 @@ python -m model.calibrate
 
 ### Training schedule
 
-The model trains in three phases to avoid over-fitting the backbone to the small head:
-
 | Phase | Layers unfrozen | Epochs | Learning rate |
 |---|---|---|---|
 | 1 | Classifier head only | 10 | 1e-3 |
 | 2 | Head + top 2 backbone blocks | 10 | 2e-4 |
 | 3 | All layers | 20 | 5e-5 |
-
-### Tracking hyperparameters
-
-All hyperparameters are stored in `params.yaml` and tracked by DVC. Changing a param and running `dvc repro` will only re-run affected stages.
 
 ---
 
@@ -303,17 +319,15 @@ Image (3 × 224 × 224)
 
 ## API Reference
 
-Full interactive docs at `http://localhost:8000/docs`.
+Full interactive docs at https://deeptrace-api-y39b.onrender.com/docs
 
 ### Authentication
 
 All prediction endpoints require an API key header:
 
 ```
-X-API-Key: your-api-key
+X-API-Key: deeptrace-demo-key
 ```
-
-API keys are set via the `API_KEYS` environment variable (comma-separated list).
 
 ### Endpoints
 
@@ -329,22 +343,9 @@ API keys are set via the `API_KEYS` environment variable (comma-separated list).
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `gradcam` | bool | `false` | Include Grad-CAM heatmap (base64 PNG) |
+| `gradcam` | bool | `false` | Include Grad-CAM heatmap |
 | `lime` | bool | `false` | Include LIME superpixel map (~2s extra) |
 | `explain` | bool | `false` | Include natural-language explanation via Claude |
-
-### Batch prediction flow
-
-```
-POST /api/v1/predict/batch  (upload N images)
-  → { "job_id": "job_xyz", "status": "queued", "total": 5 }
-
-GET /api/v1/jobs/job_xyz
-  → { "status": "processing", "completed": 3, "total": 5 }
-
-GET /api/v1/jobs/job_xyz   (when done)
-  → { "status": "completed", "results": [ ... ] }
-```
 
 ---
 
@@ -354,8 +355,8 @@ GET /api/v1/jobs/job_xyz   (when done)
 import time
 import requests
 
-BASE = "http://localhost:8000/api/v1"
-HEADERS = {"X-API-Key": "dev-key-123"}
+BASE = "https://deeptrace-api-y39b.onrender.com/api/v1"
+HEADERS = {"X-API-Key": "deeptrace-demo-key"}
 
 # ── Single prediction ─────────────────────────────────────────
 with open("image.jpg", "rb") as f:
@@ -363,21 +364,17 @@ with open("image.jpg", "rb") as f:
         f"{BASE}/predict",
         headers=HEADERS,
         files={"file": f},
-        params={"gradcam": True, "explain": True},
+        params={"explain": True},
     )
 
 result = response.json()
 print(result["predicted_source"], result["confidence"])
-# stable_diffusion 0.924
 
 # ── Batch prediction ──────────────────────────────────────────
-image_paths = ["img1.jpg", "img2.jpg", "img3.jpg"]
-files = [("files", open(p, "rb")) for p in image_paths]
-
+files = [("files", open(p, "rb")) for p in ["img1.jpg", "img2.jpg"]]
 response = requests.post(f"{BASE}/predict/batch", headers=HEADERS, files=files)
 job_id = response.json()["job_id"]
 
-# Poll until complete
 while True:
     status = requests.get(f"{BASE}/jobs/{job_id}", headers=HEADERS).json()
     if status["status"] == "completed":
@@ -391,16 +388,12 @@ while True:
 
 ## Browser Extension
 
-The `extension/` directory contains a Manifest V3 extension compatible with Chrome and Firefox.
-
-**Install (developer mode):**
+The `extension/` directory contains a Manifest V3 extension for Chrome and Firefox.
 
 1. Open `chrome://extensions/`
-2. Enable **Developer mode** (top right toggle)
+2. Enable **Developer mode**
 3. Click **Load unpacked** → select the `extension/` folder
 4. Right-click any image on any webpage → **"Check with DeepTrace"**
-
-A badge overlays the image showing the predicted source and confidence score. The extension calls your locally running API by default; change `API_URL` in `extension/config.js` to point at a deployed instance.
 
 ---
 
@@ -408,33 +401,15 @@ A badge overlays the image showing the predicted source and confidence score. Th
 
 ### Prometheus + Grafana
 
-Metrics are exposed at `/metrics` in Prometheus format. Docker Compose auto-provisions:
-
-- **Prometheus** at `http://localhost:9090` - scrapes `/metrics` every 15s
-- **Grafana** at `http://localhost:3001` - pre-built dashboard (`monitoring/grafana/dashboard.json`)
-
-Dashboard panels:
-
-- Predictions per second by source class
-- Inference latency - p50 / p95 / p99
-- API error rate
-- Confidence score distribution over time
+Metrics exposed at `/metrics`. Docker Compose auto-provisions Prometheus (`:9090`) and Grafana (`:3001`) with a pre-built dashboard.
 
 ### Drift detection
-
-Runs weekly via GitHub Actions cron, or trigger manually:
 
 ```bash
 python -m monitoring.drift_report --threshold 0.25
 ```
 
-Compares the current week's prediction distribution against the reference baseline using KL divergence via Evidently. Sends a Slack alert if the threshold is exceeded, which typically means a new AI generator is producing images outside the training distribution.
-
-Configure the webhook in `.env`:
-
-```
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
-```
+Compares current prediction distribution against the reference baseline using KL divergence. Sends a Slack alert if exceeded — typically indicating a new AI generator outside the training distribution.
 
 ---
 
@@ -442,19 +417,16 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
 
 ```
 push → main
-    │
     ├── lint        ruff + black
     ├── test        pytest + coverage (torch mocked, no GPU needed)
     ├── model-eval  F1 ≥ 0.82 gate
-    └── docker      parallel build & push to ghcr.io
-                    ├── deeptrace-api:main / :latest / :sha-<hash>
-                    └── deeptrace-worker:main / :latest / :sha-<hash>
+    └── docker      build & push to ghcr.io
 
 schedule (Monday 08:00 UTC)
     └── drift-check  →  Slack alert if KL divergence > 0.25
 ```
 
-Images are published to the GitHub Container Registry:
+Images published to GitHub Container Registry:
 
 ```
 ghcr.io/musaislamfahad/deeptrace-api:latest
@@ -465,19 +437,16 @@ ghcr.io/musaislamfahad/deeptrace-worker:latest
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill in your values. Key variables:
-
 | Variable | Description | Default |
 |---|---|---|
 | `API_KEYS` | Comma-separated valid API keys | `dev-key-123` |
-| `MODEL_URI` | Path to checkpoint or MLflow model URI | `checkpoints/calibrated_model.pt` |
+| `MODEL_URI` | Checkpoint path or MLflow URI | `checkpoints/calibrated_model.pt` |
 | `MODEL_DEVICE` | `cpu` or `cuda` | `cpu` |
-| `MODEL_DEMO_MODE` | Skip model load, return mock predictions | `false` |
+| `MODEL_DEMO_MODE` | Return mock predictions (free tier) | `false` |
 | `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
 | `MLFLOW_TRACKING_URI` | MLflow server URL | `http://localhost:5000` |
-| `ANTHROPIC_API_KEY` | Required for `?explain=true` | — |
-| `SLACK_WEBHOOK_URL` | Drift alert destination | — |
-| `S3_BUCKET` | S3 bucket for XAI artifacts | — |
+| `ANTHROPIC_API_KEY` | Required for `?explain=true` | - |
+| `SLACK_WEBHOOK_URL` | Drift alert destination | - |
 
 ---
 
@@ -488,75 +457,69 @@ Copy `.env.example` to `.env` and fill in your values. Key variables:
 1. Collect images into `data/raw/<new_source>/<category>/`
 2. Add the class to `CLASS_TO_IDX` in `data/dataset.py`
 3. Update `NUM_CLASSES = 6` in `model/architecture.py`
-4. Run `dvc repro` to retrain from scratch
-5. Bump the model version in the MLflow registry
+4. Run `dvc repro` to retrain
+5. Bump model version in MLflow registry
 
 ### Swapping the backbone
-
-Any `timm` model that returns a flat feature vector works as a drop-in:
 
 ```python
 # model/architecture.py
 self.effnet = timm.create_model("convnext_small", pretrained=True, num_classes=0)
 ```
 
-Check the output feature dimension with `model.feature_info[-1]["num_chs"]` and update the `concat_dim` accordingly.
-
-### Deploying to Render (free tier)
-
-The repo includes a CPU-optimised image (`Dockerfile.render`) and a `render.yaml` blueprint. The CPU PyTorch wheel is ~600 MB smaller than the default CUDA build.
-
-```bash
-# Build the Render image locally to test
-docker build -f Dockerfile.render -t deeptrace-render .
-docker run -p 10000:10000 --env-file .env deeptrace-render
-```
-
 ---
- 
+
 ## Contributing
- 
-Contributions are welcome!
- 
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add your feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-Please make sure your code passes the linter and tests before opening a PR:
- 
+3. Commit your changes
+4. Push and open a Pull Request
+
+Before opening a PR:
+
 ```bash
 ruff check api/ model/ data/ workers/ tests/
 black --check api/ model/ data/ workers/ tests/
 pytest tests/ -x
 ```
- 
+
 ---
- 
+
 ## License
- 
-MIT © 2024 Md. Musa Islam Fahad. Free to use, adapt, and share with attribution. See [LICENSE](LICENSE) for details.
- 
+
+MIT © 2024 Md. Musa Islam Fahad. Free to use, adapt, and share with attribution.
+
 ---
- 
+
 ## Acknowledgements
- 
-- [PyTorch](https://pytorch.org/) - deep learning framework powering the ensemble model
+
+- [PyTorch](https://pytorch.org/) - deep learning framework
 - [timm](https://github.com/huggingface/pytorch-image-models) - EfficientNet and ViT backbones
 - [FastAPI](https://fastapi.tiangolo.com/) - async API framework
-- [Celery](https://docs.celeryq.dev/) - distributed task queue for batch inference
+- [Celery](https://docs.celeryq.dev/) - distributed task queue
 - [MLflow](https://mlflow.org/) - experiment tracking and model registry
 - [DVC](https://dvc.org/) - data and pipeline versioning
 - [Evidently](https://www.evidentlyai.com/) - model monitoring and drift detection
 - [Anthropic Claude](https://www.anthropic.com/) - natural-language XAI explanations
-- [AI vs Real Image Classification](https://www.kaggle.com/datasets/rhythmghai/ai-vs-real-images-dataset) - base dataset extended to multi-generator provenance detection
+- [AI vs Real Image Classification](https://www.kaggle.com/datasets/rhythmghai/ai-vs-real-images-dataset) - base dataset
+
 ---
- 
+
 ## Author
- 
+
 **Md. Musa Islam Fahad**
- 
+
 - GitHub: [@MusaIslamFahad](https://github.com/MusaIslamFahad)
+
 ---
- 
+
 > ⭐ If DeepTrace helped you understand AI image detection or MLOps deployment, a star goes a long way. Thank you!
+
+
+
+
+
+
+
+
